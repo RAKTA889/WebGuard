@@ -1,13 +1,5 @@
 # WebGuard - Vulnerability Scanner
 
-__          ________ ____   _____ _    _         _____  _____  
-\ \        / /  ____|  _ \ / ____| |  | |  /\   |  __ \|  __ \ 
- \ \  /\  / /| |__  | |_) | |  __| |  | | /  \  | |__) | |  | |
-  \ \/  \/ / |  __| |  _ <| | |_ | |  | |/ /\ \ |  _  /| |  | |
-   \  /\  /  | |____| |_) | |__| | |__| / ____ \| | \ \| |__| |
-    \/  \/   |______|____/ \_____|\____/_/    \_\_|  \_\_____/ 
-                                                                
-
 **WebGuard** is an advanced vulnerability scanner that focuses on detecting common security flaws in web applications, such as **XSS (Cross-Site Scripting)**, **SQL Injection**, **Directory Traversal**, and **CSRF (Cross-Site Request Forgery)**.
 
 This project aims to automate the identification of security vulnerabilities to make web applications safer for end-users and easier for developers to audit.
