@@ -8,8 +8,12 @@ from xss_scanner import XSSScanner
 from colorama import Fore, Style
 
 class WebGuard:
-    def __init__(self):
-        pass
+    def __init__(self, url):
+        self.url = url
+        self.csrf_scanner = CSRFScanner()
+        self.sql_injection_scanner = SQLInjectionScanner(url)
+        self.directory_traversal_scanner = DirectoryTraversalScanner(url)
+        self.xss_scanner = XSSScanner(url)
 
     def clear_console(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -45,22 +49,18 @@ __          ________ ____   _____ _    _         _____  _____
             else:
                 print(colored("\nInvalid choice! Please try again.", 'red'))
 
-    def full_scan(self, url):
+    def full_scan(self):
         print(colored("\nStarting Full Scan...\n", 'yellow'))
 
-        scanner = CSRFScanner()
-        scanner.csrf_scanner(url)
-        csrf_result = "CSRF vulnerabilities found." if len(scanner.results) > 0 else "No CSRF vulnerabilities found."
+        self.csrf_scanner.csrf_scanner(self.url)
+        csrf_result = "CSRF vulnerabilities found." if len(self.csrf_scanner.results) > 0 else "No CSRF vulnerabilities found."
 
-        sql_injection_scanner = SQLInjectionScanner(url)
-        sql_injection_scanner.crawl_and_test()
-        sql_injection_result = "SQL injection vulnerabilities found." if sql_injection_scanner.results else "No SQL injection vulnerabilities found."
+        self.sql_injection_scanner.crawl_and_test()
+        sql_injection_result = "SQL injection vulnerabilities found." if self.sql_injection_scanner.results else "No SQL injection vulnerabilities found."
 
-        dir_traversal_scanner = DirectoryTraversalScanner(url)
-        dir_traversal_result = dir_traversal_scanner.scan()
+        dir_traversal_result = self.directory_traversal_scanner.scan()
 
-        xss_scanner = XSSScanner(url)
-        xss_results = xss_scanner.scan_url()
+        xss_results = self.xss_scanner.scan_url(self.url)
         
         print(Fore.MAGENTA + "\n[***] Full Scan Report [***]\n" + Style.RESET_ALL)
         
@@ -80,42 +80,42 @@ __          ________ ____   _____ _    _         _____  _____
         self.clear_console()
         self.display_title()
         
-        url = input("\nEnter the website URL to scan: ").strip()
-
         while True:
+            self.url = input("\nEnter the website URL to scan: ").strip()
+            if not self.url.startswith(('http://', 'https://')):
+                print(colored("Please enter a valid URL starting with http:// or https://", 'red'))
+                continue
+            
             choice = self.display_menu()
 
             if choice == '1':
                 print(colored("\nStarting CSRF Scan...", 'yellow'))
-                scanner = CSRFScanner()
-                scanner.csrf_scanner(url)
-                scanner.print_final_report()
+                self.csrf_scanner.csrf_scanner(self.url)
+                self.csrf_scanner.print_final_report()
 
             elif choice == '2':
                 print(colored("\nStarting SQL Injection Scan...", 'yellow'))
-                sql_injection_scanner = SQLInjectionScanner(url)
-                sql_injection_scanner.crawl_and_test()
-                sql_injection_scanner.print_final_report()
+                self.sql_injection_scanner.crawl_and_test()
+                self.sql_injection_scanner.print_final_report()
 
             elif choice == '3':
                 print(colored("\nStarting Directory Traversal Scan...", 'yellow'))
-                dir_traversal_scanner = DirectoryTraversalScanner(url)
-                dir_traversal_scanner.scan()
+                self.directory_traversal_scanner.scan()
 
             elif choice == '4':
                 print(colored("\nStarting XSS Scan...", 'yellow'))
-                xss_scanner = XSSScanner(url)
-                results = xss_scanner.scan_url()
+                results = self.xss_scanner.scan_url(self.url)
                 print("Scan Results:")
                 print(json.dumps(results, indent=4))
 
             elif choice == '5':
-                self.full_scan(url)
+                self.full_scan()
 
             elif choice == '6':
                 print(colored("\nExiting Webguard. Goodbye!", 'red'))
                 break
 
 if __name__ == "__main__":
-    webguard = WebGuard()
+    url = input("Enter the website URL to scan: ")
+    webguard = WebGuard(url)
     webguard.main()
