@@ -1,0 +1,211 @@
+{% extends 'navbar.html' %}
+
+{% block title %}
+Home
+{% endblock %}
+
+{% block content %}
+<style>
+  /* Hero Section Styles */
+  .hero {
+    background: url('https://www.indusface.com/wp-content/uploads/2021/02/Eliminate-Potential-Vulnerabilities-with-Web-Application-Penetration-Testing.png') no-repeat center center/cover;
+    color: white;
+    text-align: center;
+    padding: 6rem 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 15px rgb(0 0 0 / 54%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-overlay {
+    background: rgba(0, 0, 0, 0.4);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    animation: fadeIn 2s ease;
+  }
+
+  .hero h1 {
+    font-size: 4.5rem;
+    font-weight: bold;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .hero p {
+    font-size: 1.6rem;
+    margin-top: 1.5rem;
+    line-height: 1.8;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes zoomIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Features Section */
+  .features {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin: 4rem 0;
+  }
+
+  .feature-card {
+    background: linear-gradient(to right, #c9d6ff, #e2e2e2);
+    padding: 2rem;
+    width: 30%;
+    text-align: center;
+    border-radius: 16px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    margin: 1.5rem 0;
+    animation: zoomIn 1.5s ease;
+    transition: transform 0.3s;
+    position: relative;
+  }
+
+  .feature-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 12px;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-10px);
+  }
+
+  .feature-card h3 {
+    color: #0077b6;
+    font-size: 2rem;
+    margin-top: 1rem;
+  }
+
+  /* Team Section Styles */
+  .team-section {
+    background: linear-gradient(135deg, #fdfbfb, #ebedee);
+    padding: 4rem 2rem;
+    text-align: center;
+    border-radius: 16px;
+  }
+
+  .team-section h2 {
+    font-size: 3rem;
+    margin-bottom: 2.5rem;
+    letter-spacing: 1.5px;
+    color: #333;
+  }
+
+  .team-grid {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 2rem;
+  }
+
+  .team-card {
+    background: white;
+    padding: 1.5rem;
+    width: 18%;
+    border-radius: 16px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    transition: transform 0.3s ease;
+    animation: zoomIn 2s;
+  }
+
+  .team-card:hover {
+    transform: translateY(-8px);
+  }
+
+  .team-card img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+  }
+
+  .team-card h4 {
+    color: #1d3557;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-top: 1rem;
+  }
+</style>
+
+<!-- Hero Section -->
+<div class="hero">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <h1>Welcome to WebGuard!</h1>
+    <p>Your reliable and advanced web vulnerability scanner designed to ensure the safety and security of your web applications.</p>
+  </div>
+</div>
+
+<!-- Features Section -->
+<section class="features">
+  <div class="feature-card">
+    <img src="https://via.placeholder.com/400x200?text=Web+Security" alt="Feature Image">
+    <h3>Web Security at Its Best</h3>
+    <p>WebGuard helps you identify and eliminate potential security vulnerabilities, ensuring your applications remain secure.</p>
+  </div>
+  <div class="feature-card">
+    <img src="https://via.placeholder.com/400x200?text=Vulnerability+Detection" alt="Feature Image">
+    <h3>Comprehensive Vulnerability Detection</h3>
+    <p>With a powerful scanning engine, WebGuard detects SQL Injection, XSS, CSRF, Path Traversal, SSRF, and SSL/TLS weaknesses.</p>
+  </div>
+  <div class="feature-card">
+    <img src="https://via.placeholder.com/400x200?text=User-Friendly+Design" alt="Feature Image">
+    <h3>Intuitive and User-Friendly</h3>
+    <p>Our modern and responsive UI simplifies security assessments, making the process accessible even to non-experts.</p>
+  </div>
+</section>
+
+<!-- Team Section -->
+<section class="team-section">
+  <h2>Meet Our Team</h2>
+  <div class="team-grid">
+    <div class="team-card">
+      <img src="https://via.placeholder.com/100?text=SK" alt="Shailesh Kadam">
+      <h4>Shailesh Kadam</h4>
+    </div>
+    <div class="team-card">
+      <img src="https://via.placeholder.com/100?text=AS" alt="Atharva Sail">
+      <h4>Atharva Sail</h4>
+    </div>
+    <div class="team-card">
+      <img src="https://via.placeholder.com/100?text=HS" alt="Himanshu Sharma">
+      <h4>Himanshu Sharma</h4>
+    </div>
+    <div class="team-card">
+      <img src="https://via.placeholder.com/100?text=AM" alt="Aniket Maurya">
+      <h4>Aniket Maurya</h4>
+    </div>
+  </div>
+</section>
+{% endblock %}

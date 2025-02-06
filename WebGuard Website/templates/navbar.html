@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    {% block title %}
+
+    {% endblock %}
+  </title>
+  <style>
+    /* Global styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'SF Pro Text ', sans-serif;
+    }
+
+    /* Navbar container */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #fcfcfc;
+      padding: 1rem 2rem;
+      border-bottom: 2px solid #ddd;
+    }
+
+    /* Navigation links */
+    .nav-links {
+      display: flex;
+      list-style: none;
+    }
+
+    .nav-links li {
+      margin: 0 1rem;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: black;
+      font-size: 1.05rem;
+      font-weight: 500; /* Bolder font */
+      padding: 0.5rem 1rem;
+      border-radius: 8px; /* Subtle roundness */
+      transition: all 0.3s ease;
+    }
+
+    /* Hover effect */
+    .nav-links a:hover {
+      color: #1e6056;
+      background-color: #dbf5f3;
+      border-radius: 12px; /* More rounded hover background */
+    }
+
+    /* Navbar title */
+    .navbar-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: black;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <ul class="nav-links">
+      <li><a href="{{ url_for('home_page')}}">Home</a></li>
+      <li><a href="{{ url_for('scanner_page')}}">Scanner</a></li>
+      <li><a href="{{ url_for('attack_info_page')}}">Attack Info</a></li>
+    </ul>
+    <div class="navbar-title">WEBGUARD</div>
+  </nav>
+  {% block content %}
+  {% endblock %}
+</body>
+</html>
